@@ -1,0 +1,27 @@
+# 构建产物
+dist/
+out/
+tools/make-icon.exe
+*.exe
+*.pdb
+*.dll
+
+# IDE / 编辑器
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# 运行时数据与临时文件
+tasks.json
+selftest-report.txt
+*.corrupt-*.json
+*.tmp
+.smoke/
+.selftest-*/
+.selftest*/
+
+# Windows
+Thumbs.db
+Desktop.ini

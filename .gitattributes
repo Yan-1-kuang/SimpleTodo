@@ -1,0 +1,21 @@
+# 统一换行符处理，避免 Windows / macOS / Linux 之间来回改行尾
+* text=auto
+
+*.cs        text eol=crlf
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.csproj    text eol=crlf
+*.manifest  text eol=crlf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# 二进制文件不做换行转换
+*.ico       binary
+*.exe       binary
+*.png       binary
+*.jpg       binary
+*.zip       binary
+
+# 让 git diff 把 .ico 当作二进制显示，而不是尝试文本比对
+*.ico       -diff

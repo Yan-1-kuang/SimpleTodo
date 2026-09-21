@@ -1,0 +1,61 @@
+name: build
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 构建与自检
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 检查编译环境
+        shell: pwsh
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          if (Test-Path -LiteralPath $csc) {
+            Write-Host "找到 C# 编译器：$csc"
+          } else {
+            Write-Warning "未找到 csc.exe，构建脚本会再次尝试并给出提示。"
+          }
+
+      - name: 构建并运行内置自检
+        shell: pwsh
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          ./build.ps1
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleTodo-win-anycpu
+          path: |
+            dist/SimpleTodo.exe
+            dist/selftest-report.txt
+          if-no-files-found: error
+
+      - name: 发布到 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/SimpleTodo.exe
+          generate_release_notes: true
+          body: |
+            下载 `SimpleTodo.exe` 后直接双击运行，无需安装。
+
+            - 运行环境：Windows 10 1903+ / Windows 11（自带 .NET Framework 4.8）
+            - 数据保存在 `%APPDATA%\SimpleTodo\tasks.json`
+            - 可用 `SimpleTodo.exe --selftest` 运行内置自检
