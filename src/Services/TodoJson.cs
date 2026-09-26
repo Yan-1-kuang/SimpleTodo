@@ -127,11 +127,31 @@ namespace SimpleTodo.Services
                 throw new FormatException("数据文件结构不正确：缺少 items 数组");
 
             List<TodoItem> items = new List<TodoItem>(rawItems.Count);
+            HashSet<Guid> seenIds = new HashSet<Guid>();
             for (int k = 0; k < rawItems.Count; k++)
             {
                 Dictionary<string, object> map = SimpleJson.AsObject(rawItems[k]);
                 if (map == null) continue;
-                items.Add(ReadItem(map));
+
+                TodoItem item;
+                try
+                {
+                    item = ReadItem(map);
+                }
+                catch (Exception)
+                {
+                    // 单个条目损坏时跳过该条目，不影响其它任务加载。
+                    continue;
+                }
+
+                if (item.Id == Guid.Empty || seenIds.Contains(item.Id))
+                {
+                    do { item.Id = Guid.NewGuid(); }
+                    while (seenIds.Contains(item.Id));
+                }
+
+                seenIds.Add(item.Id);
+                items.Add(item);
             }
             return items;
         }

@@ -176,7 +176,12 @@ namespace SimpleTodo
                 "tru",
                 "{\"a\":1}x",
                 "{\"a\" 1}",
-                "\"未闭合"
+                "\"未闭合",
+                "\"包含\n未转义换行\"",
+                "01",
+                "+1",
+                "1.",
+                "1e"
             };
 
             for (int k = 0; k < bad.Length; k++)
@@ -254,6 +259,13 @@ namespace SimpleTodo
             // 数组中的非法条目应被跳过，而不是让整份数据失败
             List<TodoItem> tolerant = TodoJson.Deserialize("[{\"title\":\"有效\"}, 123, null]");
             AssertEqual(1, tolerant.Count, "跳过非法条目");
+
+            string duplicateId = Guid.NewGuid().ToString("D");
+            List<TodoItem> unique = TodoJson.Deserialize(
+                "[{\"id\":\"" + duplicateId + "\",\"title\":\"A\"}," +
+                "{\"id\":\"" + duplicateId + "\",\"title\":\"B\"}]");
+            AssertEqual(2, unique.Count, "重复 Id 的条目不应被丢弃");
+            AssertTrue(unique[0].Id != unique[1].Id, "重复 Id 应自动重建，保证任务标识唯一");
         }
 
         private static void TestTodoJsonIgnoresUnknownKeys()

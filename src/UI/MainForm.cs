@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using SimpleTodo.Models;
@@ -18,6 +19,17 @@ namespace SimpleTodo.UI
     public class MainForm : Form
     {
         private const string TitleBase = "极简待办 SimpleTodo";
+        private const int EmSetCueBanner = 0x1501;
+
+        private static readonly Color WindowBackColor = Color.FromArgb(246, 248, 252);
+        private static readonly Color SurfaceColor = Color.White;
+        private static readonly Color BorderColor = Color.FromArgb(222, 228, 238);
+        private static readonly Color PrimaryColor = Color.FromArgb(42, 104, 214);
+        private static readonly Color MutedTextColor = Color.FromArgb(100, 112, 132);
+        private static readonly Color AlternateRowColor = Color.FromArgb(250, 252, 255);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
 
         private readonly TodoStore _store;
         private List<TodoItem> _items = new List<TodoItem>();
@@ -84,6 +96,7 @@ namespace SimpleTodo.UI
             _strikeFont = new Font(Font, FontStyle.Strikeout);
             _boldFont = new Font(Font, FontStyle.Bold);
 
+            BackColor = WindowBackColor;
             Text = TitleBase;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(940, 620);
@@ -256,8 +269,10 @@ namespace SimpleTodo.UI
         {
             Panel panel = new Panel();
             panel.Dock = DockStyle.Top;
-            panel.Height = 46;
-            panel.Padding = new Padding(10, 8, 10, 4);
+            panel.Height = 64;
+            panel.Padding = new Padding(12, 10, 12, 8);
+            panel.BackColor = SurfaceColor;
+            panel.Paint += OnSectionPanelPaint;
 
             TableLayoutPanel layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
@@ -270,8 +285,10 @@ namespace SimpleTodo.UI
 
             _addBox = new TextBox();
             _addBox.Dock = DockStyle.Fill;
-            _addBox.Margin = new Padding(0, 3, 8, 0);
+            _addBox.Font = new Font(Font.FontFamily, 11F);
+            _addBox.Margin = new Padding(0, 6, 10, 0);
             _addBox.KeyDown += OnAddBoxKeyDown;
+            SetCueBanner(_addBox, "输入新任务，按 Enter 添加");
 
             _duePicker = new DateTimePicker();
             _duePicker.Format = DateTimePickerFormat.Custom;
@@ -279,20 +296,25 @@ namespace SimpleTodo.UI
             _duePicker.ShowCheckBox = true;
             _duePicker.Checked = false;
             _duePicker.Value = DateTime.Today;
-            _duePicker.Width = 132;
-            _duePicker.Margin = new Padding(0, 3, 8, 0);
+            _duePicker.Width = 138;
+            _duePicker.Margin = new Padding(0, 7, 10, 0);
 
             _priorityBox = new ComboBox();
             _priorityBox.DropDownStyle = ComboBoxStyle.DropDownList;
             _priorityBox.Items.AddRange(new object[] { "高", "中", "低" });
             _priorityBox.SelectedIndex = 1;
-            _priorityBox.Width = 64;
-            _priorityBox.Margin = new Padding(0, 3, 8, 0);
+            _priorityBox.Width = 68;
+            _priorityBox.Margin = new Padding(0, 7, 10, 0);
 
             _addButton = new Button();
-            _addButton.Text = "添加";
-            _addButton.Width = 76;
-            _addButton.Margin = new Padding(0, 2, 0, 0);
+            _addButton.Text = "＋ 添加";
+            _addButton.Width = 88;
+            _addButton.Height = 30;
+            _addButton.Margin = new Padding(0, 5, 0, 0);
+            _addButton.FlatStyle = FlatStyle.Flat;
+            _addButton.BackColor = PrimaryColor;
+            _addButton.ForeColor = Color.White;
+            _addButton.FlatAppearance.BorderSize = 0;
             _addButton.Click += OnAddClick;
 
             layout.Controls.Add(_addBox, 0, 0);
@@ -308,8 +330,10 @@ namespace SimpleTodo.UI
         {
             Panel panel = new Panel();
             panel.Dock = DockStyle.Top;
-            panel.Height = 42;
-            panel.Padding = new Padding(10, 2, 10, 6);
+            panel.Height = 48;
+            panel.Padding = new Padding(12, 6, 12, 8);
+            panel.BackColor = SurfaceColor;
+            panel.Paint += OnSectionPanelPaint;
 
             TableLayoutPanel layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
@@ -321,8 +345,9 @@ namespace SimpleTodo.UI
 
             _searchBox = new TextBox();
             _searchBox.Dock = DockStyle.Fill;
-            _searchBox.Margin = new Padding(0, 3, 12, 0);
+            _searchBox.Margin = new Padding(0, 5, 12, 0);
             _searchBox.TextChanged += OnSearchChanged;
+            SetCueBanner(_searchBox, "搜索任务或备注（Ctrl+F）");
 
             FlowLayoutPanel filters = new FlowLayoutPanel();
             filters.AutoSize = true;
@@ -336,8 +361,12 @@ namespace SimpleTodo.UI
 
             _clearDoneButton = new Button();
             _clearDoneButton.Text = "清除已完成";
-            _clearDoneButton.Width = 104;
+            _clearDoneButton.Width = 108;
+            _clearDoneButton.Height = 28;
             _clearDoneButton.Margin = new Padding(12, 2, 0, 0);
+            _clearDoneButton.FlatStyle = FlatStyle.Flat;
+            _clearDoneButton.BackColor = SurfaceColor;
+            _clearDoneButton.FlatAppearance.BorderColor = BorderColor;
             _clearDoneButton.Click += OnClearCompleted;
 
             layout.Controls.Add(_searchBox, 0, 0);
@@ -354,8 +383,12 @@ namespace SimpleTodo.UI
             button.Appearance = Appearance.Button;
             button.Text = text;
             button.TextAlign = ContentAlignment.MiddleCenter;
-            button.Width = 74;
-            button.Height = 25;
+            button.Width = 78;
+            button.Height = 28;
+            button.FlatStyle = FlatStyle.Flat;
+            button.BackColor = SurfaceColor;
+            button.FlatAppearance.BorderColor = BorderColor;
+            button.FlatAppearance.CheckedBackColor = Color.FromArgb(228, 237, 255);
             button.Margin = new Padding(0, 0, 4, 0);
             button.Tag = filter;
             button.Checked = filter == _filter;
@@ -369,16 +402,19 @@ namespace SimpleTodo.UI
         {
             Panel panel = new Panel();
             panel.Dock = DockStyle.Fill;
-            panel.Padding = new Padding(10, 0, 10, 6);
+            panel.Padding = new Padding(12, 8, 12, 8);
+            panel.BackColor = WindowBackColor;
 
             _emptyLabel = new Label();
             _emptyLabel.Dock = DockStyle.Fill;
             _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
-            _emptyLabel.ForeColor = Color.FromArgb(130, 130, 130);
+            _emptyLabel.ForeColor = MutedTextColor;
+            _emptyLabel.Font = new Font(Font.FontFamily, 11F);
             _emptyLabel.Visible = false;
 
             _list = new ListView();
             _list.Dock = DockStyle.Fill;
+            _list.Margin = new Padding(0);
             _list.View = View.Details;
             _list.FullRowSelect = true;
             _list.CheckBoxes = true;
@@ -387,6 +423,9 @@ namespace SimpleTodo.UI
             _list.ShowItemToolTips = true;
             _list.GridLines = false;
             _list.LabelEdit = false;
+            _list.BorderStyle = BorderStyle.FixedSingle;
+            _list.BackColor = SurfaceColor;
+            _list.ForeColor = Color.FromArgb(32, 38, 50);
             _list.Columns.Add(_columnTitles[0], 400, HorizontalAlignment.Left);
             _list.Columns.Add(_columnTitles[1], 70, HorizontalAlignment.Center);
             _list.Columns.Add(_columnTitles[2], 110, HorizontalAlignment.Center);
@@ -420,12 +459,16 @@ namespace SimpleTodo.UI
         {
             StatusStrip strip = new StatusStrip();
             strip.Dock = DockStyle.Bottom;
+            strip.BackColor = SurfaceColor;
+            strip.SizingGrip = false;
 
             _statusCounts = new ToolStripStatusLabel();
             _statusCounts.Spring = true;
             _statusCounts.TextAlign = ContentAlignment.MiddleLeft;
+            _statusCounts.ForeColor = MutedTextColor;
 
             _statusView = new ToolStripStatusLabel();
+            _statusView.ForeColor = MutedTextColor;
 
             strip.Items.Add(_statusCounts);
             strip.Items.Add(_statusView);
@@ -521,6 +564,7 @@ namespace SimpleTodo.UI
                     : "没有符合条件的任务" + Environment.NewLine + "试试更换筛选条件，或清空搜索关键词";
             }
 
+            UpdateFilterButtonStyles();
             UpdateColumnHeaders();
             UpdateStatus(visible.Count);
         }
@@ -537,6 +581,7 @@ namespace SimpleTodo.UI
             row.SubItems.Add(item.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
             row.SubItems.Add(item.IsDone ? "已完成" : (item.IsOverdue ? "已逾期" : "进行中"));
             row.ToolTipText = BuildToolTip(item);
+            if (_list.Items.Count % 2 == 1) row.BackColor = AlternateRowColor;
             ApplyRowStyle(row, item);
             return row;
         }
@@ -627,6 +672,35 @@ namespace SimpleTodo.UI
                 bool shouldCheck = (TodoFilter)button.Tag == _filter;
                 if (button.Checked != shouldCheck) button.Checked = shouldCheck;
             }
+
+            UpdateFilterButtonStyles();
+        }
+
+        private void UpdateFilterButtonStyles()
+        {
+            for (int k = 0; k < _filterButtons.Count; k++)
+            {
+                RadioButton button = _filterButtons[k];
+                if (button.Checked)
+                {
+                    button.BackColor = Color.FromArgb(228, 237, 255);
+                    button.ForeColor = PrimaryColor;
+                    button.FlatAppearance.BorderColor = PrimaryColor;
+                }
+                else
+                {
+                    button.BackColor = SurfaceColor;
+                    button.ForeColor = Color.FromArgb(45, 52, 66);
+                    button.FlatAppearance.BorderColor = BorderColor;
+                }
+            }
+        }
+
+        private static void SetCueBanner(TextBox box, string text)
+        {
+            if (box == null || string.IsNullOrEmpty(text)) return;
+            try { SendMessage(box.Handle, EmSetCueBanner, (IntPtr)1, text); }
+            catch (Exception) { /* 旧系统不支持占位提示时忽略 */ }
         }
 
         #endregion
@@ -909,7 +983,12 @@ namespace SimpleTodo.UI
 
                     for (int k = 0; k < imported.Count; k++)
                     {
-                        if (existing.Contains(imported[k].Id)) imported[k].Id = Guid.NewGuid();
+                        while (imported[k].Id == Guid.Empty || existing.Contains(imported[k].Id))
+                        {
+                            imported[k].Id = Guid.NewGuid();
+                        }
+
+                        existing.Add(imported[k].Id);
                         _items.Add(imported[k]);
                     }
                 }
@@ -1013,6 +1092,12 @@ namespace SimpleTodo.UI
                 e.Handled = true;
                 EditSelected();
             }
+            else if (e.KeyCode == Keys.Space)
+            {
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+                ToggleSelected();
+            }
             else if (e.Control && e.KeyCode == Keys.A)
             {
                 for (int k = 0; k < _list.Items.Count; k++) _list.Items[k].Selected = true;
@@ -1103,6 +1188,16 @@ namespace SimpleTodo.UI
             {
                 ToolStripItem item = _list.ContextMenuStrip.Items[k];
                 if (item is ToolStripMenuItem) item.Enabled = hasSelection;
+            }
+        }
+
+        private void OnSectionPanelPaint(object sender, PaintEventArgs e)
+        {
+            Control control = sender as Control;
+            if (control == null) return;
+            using (Pen pen = new Pen(BorderColor))
+            {
+                e.Graphics.DrawLine(pen, 0, control.Height - 1, control.Width, control.Height - 1);
             }
         }
 

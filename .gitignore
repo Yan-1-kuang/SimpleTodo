@@ -2,6 +2,7 @@
 dist/
 out/
 tools/make-icon.exe
+tools/assets/
 *.exe
 *.pdb
 *.dll

@@ -74,7 +74,7 @@ namespace SimpleTodo
 
             try
             {
-                Application.Run(new MainForm(dataPath));
+                Application.Run(new MainForm(resolvedDataPath));
                 return 0;
             }
             catch (Exception ex)

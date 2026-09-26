@@ -41,10 +41,13 @@ namespace SimpleTodo.UI
             ShowInTaskbar = false;
             ClientSize = new Size(430, 300);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(246, 248, 252);
+            Font = CreateUiFont();
 
             TableLayoutPanel layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
-            layout.Padding = new Padding(14, 14, 14, 10);
+            layout.Padding = new Padding(16, 16, 16, 10);
+            layout.BackColor = Color.White;
             layout.ColumnCount = 2;
             layout.RowCount = 5;
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -57,27 +60,28 @@ namespace SimpleTodo.UI
 
             _titleBox = new TextBox();
             _titleBox.Dock = DockStyle.Fill;
-            _titleBox.Margin = new Padding(6, 4, 0, 8);
+            _titleBox.Font = new Font(Font.FontFamily, 10F);
+            _titleBox.Margin = new Padding(8, 4, 0, 10);
 
             _noteBox = new TextBox();
             _noteBox.Dock = DockStyle.Fill;
             _noteBox.Multiline = true;
             _noteBox.ScrollBars = ScrollBars.Vertical;
             _noteBox.AcceptsReturn = true;
-            _noteBox.Margin = new Padding(6, 4, 0, 8);
+            _noteBox.Margin = new Padding(8, 4, 0, 10);
 
             _priorityBox = new ComboBox();
             _priorityBox.DropDownStyle = ComboBoxStyle.DropDownList;
             _priorityBox.Items.AddRange(new object[] { "高", "中", "低" });
             _priorityBox.Width = 90;
-            _priorityBox.Margin = new Padding(6, 4, 0, 8);
+            _priorityBox.Margin = new Padding(8, 4, 0, 10);
 
             _duePicker = new DateTimePicker();
             _duePicker.Format = DateTimePickerFormat.Custom;
             _duePicker.CustomFormat = "yyyy-MM-dd";
             _duePicker.ShowCheckBox = true;
             _duePicker.Width = 150;
-            _duePicker.Margin = new Padding(6, 4, 0, 8);
+            _duePicker.Margin = new Padding(8, 4, 0, 10);
 
             layout.Controls.Add(MakeLabel("任务内容："), 0, 0);
             layout.Controls.Add(_titleBox, 1, 0);
@@ -104,12 +108,19 @@ namespace SimpleTodo.UI
             _cancelButton = new Button();
             _cancelButton.Text = "取消";
             _cancelButton.Width = 84;
+            _cancelButton.FlatStyle = FlatStyle.Flat;
+            _cancelButton.BackColor = Color.White;
+            _cancelButton.FlatAppearance.BorderColor = Color.FromArgb(222, 228, 238);
             _cancelButton.DialogResult = DialogResult.Cancel;
 
             _okButton = new Button();
             _okButton.Text = "确定";
             _okButton.Width = 84;
             _okButton.Margin = new Padding(8, 0, 0, 0);
+            _okButton.FlatStyle = FlatStyle.Flat;
+            _okButton.BackColor = Color.FromArgb(42, 104, 214);
+            _okButton.ForeColor = Color.White;
+            _okButton.FlatAppearance.BorderSize = 0;
             _okButton.Click += OnOkClick;
 
             buttons.Controls.Add(_cancelButton);
@@ -131,8 +142,29 @@ namespace SimpleTodo.UI
             label.Text = text;
             label.AutoSize = true;
             label.TextAlign = ContentAlignment.MiddleLeft;
+            label.ForeColor = Color.FromArgb(70, 82, 102);
             label.Margin = new Padding(0, 7, 0, 0);
             return label;
+        }
+
+        private static Font CreateUiFont()
+        {
+            string[] preferred = { "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI" };
+            for (int k = 0; k < preferred.Length; k++)
+            {
+                try
+                {
+                    Font font = new Font(preferred[k], 9F);
+                    if (string.Equals(font.FontFamily.Name, preferred[k], StringComparison.OrdinalIgnoreCase))
+                        return font;
+                    font.Dispose();
+                }
+                catch (Exception)
+                {
+                    // 字体不可用时继续尝试下一个
+                }
+            }
+            return new Font(FontFamily.GenericSansSerif, 9F);
         }
 
         private void LoadValues()

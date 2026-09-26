@@ -87,37 +87,57 @@ namespace SimpleTodo.Services
                 Directory.CreateDirectory(directory);
 
             string json = TodoJson.Serialize(items);
-            string temp = FilePath + ".tmp";
-            File.WriteAllText(temp, json, new UTF8Encoding(false));
+            string temp = Path.Combine(
+                string.IsNullOrEmpty(directory) ? "." : directory,
+                Path.GetFileName(FilePath) + "." + Guid.NewGuid().ToString("N") + ".tmp");
 
-            if (File.Exists(FilePath))
+            try
             {
-                try
-                {
-                    File.Replace(temp, FilePath, null);
-                }
-                catch (IOException)
-                {
-                    ReplaceByCopy(temp);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    ReplaceByCopy(temp);
-                }
-            }
-            else
-            {
-                File.Move(temp, FilePath);
-            }
+                File.WriteAllText(temp, json, new UTF8Encoding(false));
 
-            LastSavedAt = DateTime.Now;
+                if (File.Exists(FilePath))
+                {
+                    try
+                    {
+                        File.Replace(temp, FilePath, null);
+                    }
+                    catch (IOException)
+                    {
+                        ReplaceByCopy(temp);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        ReplaceByCopy(temp);
+                    }
+                }
+                else
+                {
+                    File.Move(temp, FilePath);
+                }
+
+                LastSavedAt = DateTime.Now;
+            }
+            finally
+            {
+                // 成功时临时文件通常已经被 Move/Replace 消费；失败时尽力清理本次保存产生的临时文件。
+                TryDelete(temp);
+            }
         }
 
         private void ReplaceByCopy(string temp)
         {
             File.Copy(temp, FilePath, true);
-            try { File.Delete(temp); }
+            TryDelete(temp);
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) File.Delete(path);
+            }
             catch (IOException) { /* 临时文件残留不影响使用 */ }
+            catch (UnauthorizedAccessException) { /* 临时文件残留不影响使用 */ }
         }
 
         /// <summary>把损坏的数据文件另存为 tasks.corrupt-时间戳.json，返回备份路径。</summary>

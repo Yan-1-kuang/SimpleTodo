@@ -21,6 +21,7 @@ namespace SimpleTodo.UI
             ShowInTaskbar = false;
             ClientSize = new Size(520, 400);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(246, 248, 252);
 
             TextBox content = new TextBox();
             content.Dock = DockStyle.Fill;
@@ -29,12 +30,16 @@ namespace SimpleTodo.UI
             content.WordWrap = false;
             content.ScrollBars = ScrollBars.Both;
             content.BackColor = Color.White;
+            content.BorderStyle = BorderStyle.FixedSingle;
             content.Font = new Font("Consolas", 9F);
             content.Text = BuildContent(dataFilePath);
 
             Button ok = new Button();
             ok.Text = "关闭";
             ok.Width = 84;
+            ok.FlatStyle = FlatStyle.Flat;
+            ok.BackColor = Color.White;
+            ok.FlatAppearance.BorderColor = Color.FromArgb(222, 228, 238);
             ok.DialogResult = DialogResult.OK;
 
             FlowLayoutPanel buttons = new FlowLayoutPanel();
@@ -46,7 +51,8 @@ namespace SimpleTodo.UI
 
             Panel body = new Panel();
             body.Dock = DockStyle.Fill;
-            body.Padding = new Padding(12, 12, 12, 4);
+            body.Padding = new Padding(14, 14, 14, 6);
+            body.BackColor = Color.FromArgb(246, 248, 252);
             body.Controls.Add(content);
 
             Controls.Add(body);

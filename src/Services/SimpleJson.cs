@@ -126,6 +126,7 @@ namespace SimpleTodo.Services
 
                 char c = s[i++];
                 if (c == '"') return sb.ToString();
+                if (c < ' ') throw new FormatException("JSON 字符串包含未转义的控制字符（位置 " + Position(i - 1) + "）");
                 if (c != '\\') { sb.Append(c); continue; }
 
                 if (i >= s.Length) throw new FormatException("转义序列不完整");
@@ -170,24 +171,52 @@ namespace SimpleTodo.Services
         private static object ParseNumber(string s, ref int i)
         {
             int start = i;
-            if (i < s.Length && (s[i] == '-' || s[i] == '+')) i++;
 
-            while (i < s.Length)
+            if (i < s.Length && s[i] == '-') i++;
+
+            if (i >= s.Length || !IsDigit(s[i]))
+                throw new FormatException("无法解析的数字（位置 " + Position(start) + "）");
+
+            if (s[i] == '0')
             {
-                char c = s[i];
-                bool part = (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-';
-                if (!part) break;
                 i++;
+                if (i < s.Length && IsDigit(s[i]))
+                    throw new FormatException("JSON 数字不允许前导零（位置 " + Position(start) + "）");
+            }
+            else
+            {
+                while (i < s.Length && IsDigit(s[i])) i++;
+            }
+
+            if (i < s.Length && s[i] == '.')
+            {
+                i++;
+                if (i >= s.Length || !IsDigit(s[i]))
+                    throw new FormatException("小数点后缺少数字（位置 " + Position(start) + "）");
+                while (i < s.Length && IsDigit(s[i])) i++;
+            }
+
+            if (i < s.Length && (s[i] == 'e' || s[i] == 'E'))
+            {
+                i++;
+                if (i < s.Length && (s[i] == '+' || s[i] == '-')) i++;
+                if (i >= s.Length || !IsDigit(s[i]))
+                    throw new FormatException("指数部分缺少数字（位置 " + Position(start) + "）");
+                while (i < s.Length && IsDigit(s[i])) i++;
             }
 
             string raw = s.Substring(start, i - start);
             double number;
-            if (raw.Length == 0 ||
-                !double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+            if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
             {
                 throw new FormatException("无法解析的数字 '" + raw + "'（位置 " + Position(start) + "）");
             }
             return number;
+        }
+
+        private static bool IsDigit(char c)
+        {
+            return c >= '0' && c <= '9';
         }
 
         private static void ExpectLiteral(string s, ref int i, string literal)
